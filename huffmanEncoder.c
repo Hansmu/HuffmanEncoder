@@ -1,4 +1,4 @@
-#import <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 
@@ -6,12 +6,15 @@ struct Node* createNewNode();
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
 struct Node* getLowestFrequencyNode(char *string);
+void encodeText(char *text, struct Node* encodingTree);
+char* find(struct Node* node, char letter, char* path);
 int getLetterCountFromString(char *string, char letter);
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
 struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
+char* findCorrespondingCodeForLetterInTree(struct Node* encodingTree, char letter);
 struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
 
-typedef struct Node {
+struct Node {
     int frequency;
     char character;
     struct Node* leftNode;
@@ -20,8 +23,57 @@ typedef struct Node {
 
 int main() {
     char word[] = "Mississippi river";
+    char* copyOfText = malloc(strlen(word));
+    strcpy(copyOfText, word);
     struct Node* encodingTree = createEncodingTree(word);
+    encodeText(copyOfText, encodingTree);
     return 0;
+}
+
+char* findCorrespondingCodeForLetterInTree(struct Node* encodingTree, char letter) {
+    return find(encodingTree, letter, "");
+}
+
+void encodeText(char *text, struct Node* encodingTree) {
+    int i;
+
+    FILE *file = fopen("encodedText.txt", "w+");
+
+    if (file == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+
+    for( i= 0; i < strlen(text); i++) {
+        char* encodedLetter = findCorrespondingCodeForLetterInTree(encodingTree, text[i]);
+        fprintf(file, encodedLetter);
+    }
+
+    fflush(file);
+    fclose(file);
+}
+
+char* find(struct Node* node, char letter, char* path) {
+    char* currentPath;
+    char* newPathLeft = malloc(strlen(path) + 1);
+    char* newPathRight = malloc(strlen(path) + 1);
+    strcpy(newPathLeft, path);
+    strcpy(newPathRight, path);
+
+    if (node == NULL) {
+        return NULL;
+    }
+    if (node -> character == letter) {
+        return path;
+    }
+    if(NULL != (currentPath=find(node -> leftNode, letter, strcat(newPathLeft, "1")))) {
+        return currentPath;
+    }
+    if(NULL!=(currentPath=find(node -> rightNode, letter, strcat(newPathRight, "0")))) {
+        return currentPath;
+    }
+    return NULL;
 }
 
 struct Node* createEncodingTree(char *text) {
@@ -68,7 +120,7 @@ struct Node* createNewNode() {
     struct Node* node = malloc(sizeof(*node));
 
     node -> frequency = 0;
-    node -> character = NULL;
+    node -> character = '\0';
     node -> leftNode = NULL;
     node -> rightNode = NULL;
 
