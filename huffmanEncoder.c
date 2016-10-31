@@ -2,17 +2,7 @@
 #include <string.h>
 #include <malloc.h>
 
-struct Node* createNewNode();
-struct Node* createEncodingTree(char *text);
-void removeCharacterFromString(char* str, char c);
-struct Node* getLowestFrequencyNode(char *string);
-void encodeText(char *text, struct Node* encodingTree);
-char* find(struct Node* node, char letter, char* path);
-int getLetterCountFromString(char *string, char letter);
-struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
-struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
-char* findCorrespondingCodeForLetterInTree(struct Node* encodingTree, char letter);
-struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
+#include "list.h"
 
 struct Node {
     int frequency;
@@ -21,23 +11,40 @@ struct Node {
     struct Node* rightNode;
 };
 
+struct Node* createNewNode();
+struct Node* createEncodingTree(char *text);
+void removeCharacterFromString(char* str, char c);
+struct Node* getLowestFrequencyNode(char *string);
+int getLetterCountFromString(char *string, char letter);
+struct ListElement* createListOfLeafValues(struct Node* encodingTree);
+struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
+struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
+struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
+
 int main() {
     char word[] = "Mississippi river";
     char* copyOfText = malloc(strlen(word));
     strcpy(copyOfText, word);
     struct Node* encodingTree = createEncodingTree(word);
-    encodeText(copyOfText, encodingTree);
+    struct ListElement* list = createListOfLeafValues(encodingTree);
+    encodeText(copyOfText, list);
     return 0;
 }
 
-char* findCorrespondingCodeForLetterInTree(struct Node* encodingTree, char letter) {
-    return find(encodingTree, letter, "");
+struct ListElement* createListOfLeafValues(struct Node* encodingTree) {
+    struct ListElement *list = malloc(sizeof(*list));
+    list -> combination = NULL;
+    list -> character = '\0';
+    list -> nextElement = NULL;
+
+    find(encodingTree, list, "");
+    return list;
 }
 
-void encodeText(char *text, struct Node* encodingTree) {
+void encodeText(char *text, struct ListElement* list) {
     int i;
 
-    FILE *file = fopen("encodedText.txt", "w+");
+    FILE *file = fopen("C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\encodedText.txt", "w+");
 
     if (file == NULL)
     {
@@ -46,7 +53,8 @@ void encodeText(char *text, struct Node* encodingTree) {
     }
 
     for( i= 0; i < strlen(text); i++) {
-        char* encodedLetter = findCorrespondingCodeForLetterInTree(encodingTree, text[i]);
+        char letter = text[i];
+        char* encodedLetter = findCharacterCodeInList(list, letter);
         fprintf(file, encodedLetter);
     }
 
@@ -54,7 +62,7 @@ void encodeText(char *text, struct Node* encodingTree) {
     fclose(file);
 }
 
-char* find(struct Node* node, char letter, char* path) {
+char* find(struct Node* node, struct ListElement *list, char* path) {
     char* currentPath;
     char* newPathLeft = malloc(strlen(path) + 1);
     char* newPathRight = malloc(strlen(path) + 1);
@@ -64,13 +72,13 @@ char* find(struct Node* node, char letter, char* path) {
     if (node == NULL) {
         return NULL;
     }
-    if (node -> character == letter) {
-        return path;
+    if (node -> leftNode == NULL && node -> rightNode == NULL) {
+        pushUniqueLetterAndPathToList(list, node -> character, path);
     }
-    if(NULL != (currentPath=find(node -> leftNode, letter, strcat(newPathLeft, "1")))) {
+    if(NULL != (currentPath=find(node -> leftNode, list, strcat(newPathLeft, "1")))) {
         return currentPath;
     }
-    if(NULL!=(currentPath=find(node -> rightNode, letter, strcat(newPathRight, "0")))) {
+    if(NULL!=(currentPath=find(node -> rightNode, list, strcat(newPathRight, "0")))) {
         return currentPath;
     }
     return NULL;
