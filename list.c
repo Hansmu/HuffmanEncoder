@@ -14,21 +14,29 @@ char *getEncodedTree(struct ListElement *list) {
     struct EncodedNode *firstNode = malloc(sizeof(*firstNode));
     struct EncodedNode *secondNode = malloc(sizeof(*secondNode));
     struct ListElement firstElement, secondElement;
+    struct ListElement *copyForRemoving, *copyForIterating = list;
 
-    while (list -> nextElement) {
+    while (copyForIterating -> nextElement) {
         firstElement = findLongestPathInListAndRemove(list);
+        list = firstElement.nextElement;
         secondElement = findNeighbourPathElementInListAndRemove(firstElement.combination, list);
+        list = secondElement.nextElement;
+        copyForIterating = list;
+        int hasNoRemainingNodes = secondElement.combination == NULL;
 
-        if (secondElement == NULL) {
-            if (firstNode -> parentSequence == NULL && firstNode -> nextNode == NULL) {
+        if (hasNoRemainingNodes) {
+            int hasASingleCharacter = firstNode -> parentSequence == NULL && firstNode -> nextNode == NULL;
+            if (hasASingleCharacter) {
+                firstNode -> parentSequence = malloc(sizeof(char) * (strlen(firstElement.combination) + 1));
+                char * charAsPointer = malloc(sizeof(char) * 2);
+                charAsPointer[0] = firstElement.character;
+
+                firstNode -> encodedNode = createEncodedPairOfNodes(charAsPointer, "");
                 strncpy(firstNode -> parentSequence, firstElement.combination, strlen(firstElement.combination) - 1);
             }
         } else {
-            strncpy(firstNode.parentSequence, firstElement.combination, strlen(firstElement.combination) - 1);
+            strncpy(firstNode -> parentSequence, firstElement.combination, strlen(firstElement.combination) - 1);
         }
-
-        free(firstElement);
-        free(secondElement);
 
         firstElement = findLongestPathInListAndRemove(list);
         secondElement = findNeighbourPathElementInListAndRemove(firstElement.combination, list);
@@ -48,19 +56,19 @@ char* concatenateStrings(char* stringOne, char* stringTwo) {
 }
 
 char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombination) {
-    if (rightNodeCharacter == "") {
+    if (rightNodeCombination == "") {
         char *letter = malloc(sizeof(char) * strlen(leftNodeCombination) + 1);
-        strcpy(letter, leftNodeCharacter);
+        strcpy(letter, leftNodeCombination);
         return letter;
     } else {
         int newCombinationLength = strlen(leftNodeCombination) + strlen(rightNodeCombination) + 1;
         char* encodedPair = malloc(sizeof(char) *  newCombinationLength);
 
         strcpy(encodedPair, "&(");
-        strcat(encodedPair, leftNodeCharacter);
-        strcat(encodedPair, ',');
-        strcat(encodedPair, rightNodeCharacter);
-        strcat(encodedPair, ')');
+        strcat(encodedPair, leftNodeCombination);
+        strcat(encodedPair, ",");
+        strcat(encodedPair, leftNodeCombination);
+        strcat(encodedPair, ")");
 
         return encodedPair;
     }
@@ -68,66 +76,64 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
 
 struct ListElement findLongestPathInListAndRemove(struct ListElement *list) {
     int longestElement = 0;
-    struct ListElement *listElement = list;
+    struct ListElement *currentElement = list;
+    struct ListElement foundElement = {
+            .combination = NULL
+    };
 
-    while(listElement -> nextElement) {
-        if (strlen(listElement -> combination) > longestElement) {
-            longestElement = strlen(listElement -> combination);
+    while(currentElement != NULL) {
+        if (strlen(currentElement-> combination) > longestElement) {
+            longestElement = strlen(currentElement -> combination);
         }
+        currentElement = currentElement -> nextElement;
     }
 
-    while(list -> nextElement) {
-        if (strlen(list -> combination) == longestElement) {
-            struct ListElement foundElement = {
-                    .character = list -> character,
-                    .combination = list -> combination
-            };
+    currentElement = list;
 
-            if (list -> nextElement != NULL) {
-                listElement = list -> nextElement -> nextElement;
-                free(list -> nextElement);
-                list -> nextElement = listElement;
-            } else {
-                free(list);
-            }
+    while(currentElement != NULL) {
+        if (strlen(currentElement -> combination) == longestElement) {
+            foundElement.character = currentElement -> character;
+            foundElement.combination = currentElement -> combination;
+            foundElement.nextElement = removeElementFromList(list, currentElement);
 
             return foundElement;
         }
+
+        currentElement = currentElement -> nextElement;
     }
 
-    return NULL;
+    return foundElement;
 }
 
 struct ListElement findNeighbourPathElementInListAndRemove(char* sequence, struct ListElement *list) {
-    int sequenceParentsMatch;
-    struct ListElement *previousElement;
+    int sequenceParentsMatch = 0;
+    struct ListElement *currentElement = list;
+    struct ListElement returnElement = {
+            .combination = NULL
+    };
 
-    while (list) {
-        sequenceParentsMatch = !strncmp(list -> combination, sequence, strlen(list -> combination) - 1);
-        if (strlen(list -> combination) == strlen(sequence) && sequenceParentsMatch) {
-            previousElement -> nextElement = previousElement -> nextElement -> nextElement;
-            struct ListElement returnElement = {
-                    .combination = list -> combination,
-                    .character = list -> character
-            };
+    while (currentElement != NULL) {
+        sequenceParentsMatch = !strncmp(currentElement -> combination, sequence, strlen(currentElement -> combination) - 1);
+        if (strlen(currentElement -> combination) == strlen(sequence) && sequenceParentsMatch) {
+            returnElement.combination = currentElement -> combination;
+            returnElement.character = currentElement -> character;
+            returnElement.nextElement = removeElementFromList(list, currentElement);
 
-            free(list);
             return returnElement;
         }
-        previousElement = list;
-        list = list -> nextElement;
+        currentElement = currentElement -> nextElement;
     }
 
-    return NULL;
+    return returnElement;
 }
 
 int isLetterInList(struct ListElement* list, char letter) {
-    while(list -> nextElement) {
-        list = list -> nextElement;
-
+    while(list != NULL) {
         if (list -> character == letter) {
             return 1;
         }
+
+        list = list -> nextElement;
     }
 
     return 0;
@@ -161,4 +167,40 @@ void pushUniqueLetterAndPathToList(struct ListElement *list, char letter, char *
 
         list -> nextElement = newElement;
     }
+}
+
+struct ListElement* removeElementFromList(struct ListElement *list, struct ListElement *elementToRemove) {
+    struct ListElement *previousElement = NULL, *currentElement;
+    int hasMatchingCombination = 0, hasSameCharacter = 0, isMatchingElement = 0;
+
+
+    while(list != NULL) {
+        hasMatchingCombination = strcmp(elementToRemove -> combination, elementToRemove -> combination) == 0;
+        hasSameCharacter = list -> character == elementToRemove -> character;
+        isMatchingElement = hasMatchingCombination && hasSameCharacter;
+
+        if (isMatchingElement) {
+            int isFirstElementInList = previousElement == NULL;
+
+            if (isFirstElementInList) {
+                currentElement = list;
+                list = list -> nextElement;
+                currentElement -> nextElement = NULL;
+                free(currentElement);
+                return list;
+            } else {
+                currentElement = list;
+                list = previousElement;
+                list -> nextElement = currentElement -> nextElement;
+                currentElement -> nextElement = NULL;
+                free(currentElement);
+                return list;
+            }
+        }
+
+        previousElement = list;
+        list = list -> nextElement;
+    }
+
+    return NULL;
 }

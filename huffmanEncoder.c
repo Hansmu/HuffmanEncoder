@@ -4,13 +4,6 @@
 
 #include "list.h"
 
-struct Node {
-    int frequency;
-    char character;
-    struct Node* leftNode;
-    struct Node* rightNode;
-};
-
 struct Node* createNewNode();
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
@@ -28,6 +21,7 @@ int main() {
     struct Node* encodingTree = createEncodingTree(word);
     struct ListElement* list = createListOfLeafValues(encodingTree);
     encodeText(copyOfText, list);
+    getEncodedTree(list);
     return 0;
 }
 
