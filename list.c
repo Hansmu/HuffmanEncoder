@@ -9,40 +9,81 @@ struct EncodedNode {
     struct EncodedNode* nextNode;
 };
 
+char* charAsPointer(char character);
+char* getParentFromCombination(char *combination);
+struct EncodedNode* createEncodedPairsFromTree(struct ListElement *list);
+
 char *getEncodedTree(struct ListElement *list) {
     char *encodedTree;
-    struct EncodedNode *firstNode = malloc(sizeof(*firstNode));
-    struct EncodedNode *secondNode = malloc(sizeof(*secondNode));
-    struct ListElement firstElement, secondElement;
-    struct ListElement *copyForRemoving, *copyForIterating = list;
+    struct EncodedNode* encodedNodes = createEncodedPairsFromTree(list);
+    struct EncodedNode* firstElement, *secondElement;
 
-    while (copyForIterating -> nextElement) {
+    while(encodedNodes) {
+
+    }
+
+    return encodedTree;
+}
+
+struct EncodedNode* createEncodedPairsFromTree(struct ListElement *list) {
+    struct EncodedNode *currentElement, *firstNode, *encodedListHead = NULL;
+    struct ListElement firstElement, secondElement;
+
+    while (list) {
+        firstNode = malloc(sizeof(*firstNode));
+
         firstElement = findLongestPathInListAndRemove(list);
         list = firstElement.nextElement;
         secondElement = findNeighbourPathElementInListAndRemove(firstElement.combination, list);
         list = secondElement.nextElement;
-        copyForIterating = list;
-        int hasNoRemainingNodes = secondElement.combination == NULL;
+        int isNotPair = secondElement.combination == NULL;
 
-        if (hasNoRemainingNodes) {
-            int hasASingleCharacter = firstNode -> parentSequence == NULL && firstNode -> nextNode == NULL;
-            if (hasASingleCharacter) {
-                firstNode -> parentSequence = malloc(sizeof(char) * (strlen(firstElement.combination) + 1));
-                char * charAsPointer = malloc(sizeof(char) * 2);
-                charAsPointer[0] = firstElement.character;
+        if (isNotPair) {
+            char* firstLetter = firstElement.combination[strlen(firstElement.combination)] == '1' ?
+                                charAsPointer(firstElement.character) : charAsPointer(secondElement.character);
 
-                firstNode -> encodedNode = createEncodedPairOfNodes(charAsPointer, "");
-                strncpy(firstNode -> parentSequence, firstElement.combination, strlen(firstElement.combination) - 1);
-            }
+            firstNode -> nextNode = NULL;
+            firstNode -> encodedNode = createEncodedPairOfNodes(firstLetter, "");
+            firstNode -> parentSequence = malloc(sizeof(char) * (strlen(firstElement.combination) + 1));
+            strcpy(firstNode -> parentSequence, firstElement.combination);
+
+            currentElement -> nextNode = firstNode;
+            currentElement = currentElement -> nextNode;
         } else {
-            strncpy(firstNode -> parentSequence, firstElement.combination, strlen(firstElement.combination) - 1);
-        }
+            char* firstLetter = firstElement.combination[strlen(firstElement.combination) - 1] == '1' ?
+                                charAsPointer(firstElement.character) : charAsPointer(secondElement.character);
+            char* secondLetter = firstLetter[0] == firstElement.character ?
+                                 charAsPointer(secondElement.character) : charAsPointer(firstElement.character);
 
-        firstElement = findLongestPathInListAndRemove(list);
-        secondElement = findNeighbourPathElementInListAndRemove(firstElement.combination, list);
+            firstNode -> nextNode = NULL;
+            firstNode -> encodedNode = createEncodedPairOfNodes(firstLetter, secondLetter);
+            firstNode -> parentSequence = getParentFromCombination(firstElement.combination);
+
+            if (encodedListHead == NULL) {
+                encodedListHead = firstNode;
+                currentElement = encodedListHead;
+            } else {
+                currentElement -> nextNode = firstNode;
+                currentElement = currentElement -> nextNode;
+            }
+        }
     }
 
-    return encodedTree;
+    return encodedListHead;
+}
+
+char* getParentFromCombination(char *combination) {
+    char *parent = malloc(sizeof(char) * strlen(combination));
+    strncpy(parent, combination, strlen(combination) - 1);
+    parent[strlen(combination) - 1] = '\0';
+    return parent;
+}
+
+char* charAsPointer(char character) {
+    char *string = malloc(sizeof(char) * 2);
+    string[0] = character;
+    string[1] = '\0';
+    return string;
 }
 
 char* concatenateStrings(char* stringOne, char* stringTwo) {
@@ -59,6 +100,7 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
     if (rightNodeCombination == "") {
         char *letter = malloc(sizeof(char) * strlen(leftNodeCombination) + 1);
         strcpy(letter, leftNodeCombination);
+        letter[1] = '\0';
         return letter;
     } else {
         int newCombinationLength = strlen(leftNodeCombination) + strlen(rightNodeCombination) + 1;
@@ -67,7 +109,7 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
         strcpy(encodedPair, "&(");
         strcat(encodedPair, leftNodeCombination);
         strcat(encodedPair, ",");
-        strcat(encodedPair, leftNodeCombination);
+        strcat(encodedPair, rightNodeCombination);
         strcat(encodedPair, ")");
 
         return encodedPair;
@@ -170,16 +212,14 @@ void pushUniqueLetterAndPathToList(struct ListElement *list, char letter, char *
 }
 
 struct ListElement* removeElementFromList(struct ListElement *list, struct ListElement *elementToRemove) {
-    struct ListElement *previousElement = NULL, *currentElement;
-    int hasMatchingCombination = 0, hasSameCharacter = 0, isMatchingElement = 0;
+    struct ListElement *previousElement = NULL, *currentElement, *copyForIterating = list;
+    int hasSameCharacter = 0;
 
 
-    while(list != NULL) {
-        hasMatchingCombination = strcmp(elementToRemove -> combination, elementToRemove -> combination) == 0;
-        hasSameCharacter = list -> character == elementToRemove -> character;
-        isMatchingElement = hasMatchingCombination && hasSameCharacter;
+    while(copyForIterating != NULL) {
+        hasSameCharacter = copyForIterating -> character == elementToRemove -> character;
 
-        if (isMatchingElement) {
+        if (hasSameCharacter) {
             int isFirstElementInList = previousElement == NULL;
 
             if (isFirstElementInList) {
@@ -189,17 +229,17 @@ struct ListElement* removeElementFromList(struct ListElement *list, struct ListE
                 free(currentElement);
                 return list;
             } else {
-                currentElement = list;
-                list = previousElement;
-                list -> nextElement = currentElement -> nextElement;
+                currentElement = copyForIterating;
+                copyForIterating = previousElement;
+                copyForIterating -> nextElement = currentElement -> nextElement;
                 currentElement -> nextElement = NULL;
                 free(currentElement);
                 return list;
             }
         }
 
-        previousElement = list;
-        list = list -> nextElement;
+        previousElement = copyForIterating;
+        copyForIterating = copyForIterating -> nextElement;
     }
 
     return NULL;
