@@ -3,8 +3,8 @@
 #include <malloc.h>
 
 #include "list.h"
+#include "decode.h"
 
-struct Node* createNewNode();
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
 struct Node* getLowestFrequencyNode(char *string);
@@ -13,17 +13,18 @@ int getLetterCountFromString(char *string, char letter);
 char* find(struct Node* node, struct ListElement *list, char* path);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
-struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
 struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
 
 int main() {
-    char word[] = "Mississippi river";
+    char word[] = "Mississippi riverlll";
     char* copyOfText = malloc(strlen(word));
     strcpy(copyOfText, word);
     struct Node* encodingTree = createEncodingTree(word);
     struct ListElement* list = createListOfLeafValues(encodingTree);
     encodeText(copyOfText, list);
-    getEncodedTree(list);
+    char* encodedTree = getEncodedTree(list);
+    struct Node* decodedTree = decodeTree(encodedTree);
+    char* decodedText = decodeText("11111010010001001000110111010111101100011101111001100101101101", decodedTree);
     return 0;
 }
 
@@ -152,6 +153,7 @@ struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode) {
     int combinedFrequency = leftNode -> frequency + rightNode -> frequency;
 
     newNode -> frequency = combinedFrequency;
+    newNode -> character = '\0';
     newNode -> leftNode = leftNode;
     newNode -> rightNode = rightNode;
 

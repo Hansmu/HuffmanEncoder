@@ -14,8 +14,10 @@ struct Node {
     struct Node* rightNode;
 };
 
+struct Node* createNewNode();
 char *getEncodedTree(struct ListElement *list);
 char* findCharacterCodeInList(struct ListElement* list, char letter);
+struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
 void pushUniqueLetterAndPathToList(struct ListElement *list, char letter, char *path);
 
 #endif //HUFFMANENCODER_LIST_H
