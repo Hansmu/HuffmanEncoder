@@ -8,7 +8,9 @@ struct Node* createNewNode();
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
 struct Node* getLowestFrequencyNode(char *string);
+void encodeText(char *text, struct ListElement* list);
 int getLetterCountFromString(char *string, char letter);
+char* find(struct Node* node, struct ListElement *list, char* path);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
 struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
@@ -28,7 +30,8 @@ int main() {
 struct ListElement* createListOfLeafValues(struct Node* encodingTree) {
     struct ListElement *list = malloc(sizeof(*list));
     list -> combination = NULL;
-    list -> character = '\0';
+    list -> character = malloc(sizeof(char) * 2);
+    list -> character[1] = '\0';
     list -> nextElement = NULL;
 
     find(encodingTree, list, "");
