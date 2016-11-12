@@ -50,6 +50,9 @@ char* appendCharToString(char* string, char character) {
 struct Node* decodeTree(FILE *file) {
     int numberOfNodes = 0;
 
+    while((char)fgetc(file) == '0') {}
+    numberOfNodes++;
+
     while((char)fgetc(file) != '0') {
         numberOfNodes++;
     }

@@ -6,6 +6,7 @@
 #include "decode.h"
 
 char* getFileContents(FILE *file);
+char* createStringPadding(int paddingSize);
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
 struct Node* getLowestFrequencyNode(char *string);
@@ -52,9 +53,23 @@ void encodeTextFromFile(char* fileName, char* outputFileName) {
     struct ListElement* list = createListOfLeafValues(encodingTree);
     char* encodedText = encodeText(contentsCopy, list);
     char* encodedTree = getEncodedTree(list);
-    fputs(appendStringToString(encodedTree, encodedText), outputFile);
+    char* decodedContent = appendStringToString(encodedTree, encodedText);
+    int paddingSize = 4 - strlen(decodedContent) % 4;
+    char* padding = createStringPadding(paddingSize);
+    fputs(appendStringToString(padding, decodedContent), outputFile);
     fflush(outputFile);
     fclose(outputFile);
+}
+
+char* createStringPadding(int paddingSize) {
+    int i;
+    char* padding = calloc(paddingSize + 1, sizeof(char));
+
+    for(i = 0; i < paddingSize; i++) {
+        strcat(padding, "0");
+    }
+
+    return padding;
 }
 
 void decodeTextFromFile(char* fileName, char* outputFileName) {
