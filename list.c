@@ -9,7 +9,11 @@
  * COMBINATION = PARENTSEQUENCE
  * **/
 
+char* convertCharToBitString(char character);
 char* getParentFromCombination(char *combination);
+char *convertAllLettersToBinary(char *encodedTree);
+int getNumberOfUnconvertedLetters(char *encodedTree);
+char* setMemoryForConvertedString(char *encodedTree);
 int isLetterInList(struct ListElement* list, char letter);
 char* createEncodedTreeStringFromTreeList(struct ListElement *list);
 struct ListElement findLongestPathInListAndRemove(struct ListElement *list);
@@ -19,7 +23,55 @@ struct ListElement* removeElementFromList(struct ListElement *list, struct ListE
 
 char *getEncodedTree(struct ListElement *list) {
     char *encodedTree = createEncodedTreeStringFromTreeList(list);
-    return encodedTree;
+    return convertAllLettersToBinary(encodedTree);;
+}
+
+char *convertAllLettersToBinary(char *encodedTree) {
+    int i = 0;
+    char *characterAsString = malloc(sizeof(char) * 2);
+    char *binaryTree = setMemoryForConvertedString(encodedTree);
+    characterAsString[1] = '\0';
+    for(i = 0; i < strlen(encodedTree); i++) {
+        if (encodedTree[i] != '1' && encodedTree[i] != '0') {
+            strcat(binaryTree, convertCharToBitString(encodedTree[i]));
+        } else {
+            characterAsString[0] = encodedTree[i];
+            strcat(binaryTree, characterAsString);
+        }
+    }
+
+    return binaryTree;
+}
+
+char* setMemoryForConvertedString(char *encodedTree) {
+    int charAmount = strlen(encodedTree) + 1;
+    int numberOfLetters = getNumberOfUnconvertedLetters(encodedTree);
+    charAmount -= numberOfLetters;
+    charAmount = charAmount +  8 * numberOfLetters;
+    char *newString = (char*)calloc(charAmount, sizeof(char));
+    return newString;
+}
+
+int getNumberOfUnconvertedLetters(char *encodedTree) {
+    int i = 0;
+    int letterCount = 0;
+    for(i = 0; i < strlen(encodedTree); i++) {
+        if (encodedTree[i] != '1' && encodedTree[i] != '0') {
+            letterCount++;
+        }
+    }
+
+    return letterCount;
+}
+
+char* convertCharToBitString(char character) {
+    char *output = malloc(sizeof(char) * 9);
+    int i;
+    for(i = 0; i < 8; i++) {
+        output[7-i] = (character & (1 << i)) ? '1' : '0';
+    }
+    output[8] = '\0';
+    return output;
 }
 
 char* createEncodedTreeStringFromTreeList(struct ListElement *list) {
