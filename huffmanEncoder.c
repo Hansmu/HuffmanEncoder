@@ -5,27 +5,79 @@
 #include "list.h"
 #include "decode.h"
 
+char* getFileContents(FILE *file);
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
 struct Node* getLowestFrequencyNode(char *string);
-void encodeText(char *text, struct ListElement* list);
+char* encodeText(char *text, struct ListElement* list);
+char* appendStringToString(char* base, char* appended);
 int getLetterCountFromString(char *string, char letter);
+void decodeTextFromFile(char* fileName, char* outputFileName);
+void encodeTextFromFile(char* fileName, char* outputFileName);
 char* find(struct Node* node, struct ListElement *list, char* path);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
 struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
 
-int main() {
-    char word[] = "Mississippi riverlll";
-    char* copyOfText = malloc(strlen(word));
-    strcpy(copyOfText, word);
-    struct Node* encodingTree = createEncodingTree(word);
-    struct ListElement* list = createListOfLeafValues(encodingTree);
-    encodeText(copyOfText, list);
-    char* encodedTree = getEncodedTree(list);
-    struct Node* decodedTree = decodeTree(encodedTree);
-    char* decodedText = decodeText("11111010010001001000110111010111101100011101111001100101101101", decodedTree);
+int main(int argc, char *argv[]) {
+    argc = 3;
+    argv[1] = "-d";
+    argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\encoded.txt";
+    argv[3] = "-o";
+    argv[4] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\decoded.txt";
+
+    if (argc == 3) {
+        int isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
+        int isDecoding = strcmp(argv[1], "-d") == 0 || strcmp(argv[3], "-d") == 0;
+        char* outputFileName = strcmp(argv[1], "-o") == 0 ? argv[2] : argv[4];
+        char* fileName = strcmp(argv[1], "-e") == 0 || strcmp(argv[1], "-d") == 0 ? argv[2] : argv[4];
+
+        if (isEncoding) {
+            encodeTextFromFile(fileName, outputFileName);
+        } else if (isDecoding) {
+            decodeTextFromFile(fileName, outputFileName);
+        }
+    }
+
     return 0;
+}
+
+void encodeTextFromFile(char* fileName, char* outputFileName) {
+    FILE *file = fopen(fileName, "r");
+    FILE *outputFile = fopen(outputFileName, "w+");
+    char* fileContents = getFileContents(file);
+    char* contentsCopy = malloc(sizeof(char) * (strlen(fileContents) + 1));
+    strcpy(contentsCopy, fileContents);
+    struct Node* encodingTree = createEncodingTree(fileContents);
+    struct ListElement* list = createListOfLeafValues(encodingTree);
+    char* encodedText = encodeText(contentsCopy, list);
+    char* encodedTree = getEncodedTree(list);
+    fputs(appendStringToString(encodedTree, encodedText), outputFile);
+    fflush(outputFile);
+    fclose(outputFile);
+}
+
+void decodeTextFromFile(char* fileName, char* outputFileName) {
+    FILE *file = fopen(fileName, "r");
+    FILE *outputFile = fopen(outputFileName, "w");
+    struct Node* decodedTree = decodeTree(file);
+    char* decodedText = decodeText(file, decodedTree);
+    fputs(decodedText, outputFile);
+    fflush(outputFile);
+    fclose(outputFile);
+}
+
+char* getFileContents(FILE *file) {
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *fileContents = malloc(fileSize + 1);
+    fread(fileContents, fileSize, 1, file);
+    fileContents[fileSize] = '\0';
+    fclose(file);
+
+    return fileContents;
 }
 
 struct ListElement* createListOfLeafValues(struct Node* encodingTree) {
@@ -39,25 +91,27 @@ struct ListElement* createListOfLeafValues(struct Node* encodingTree) {
     return list;
 }
 
-void encodeText(char *text, struct ListElement* list) {
+char* encodeText(char *text, struct ListElement* list) {
     int i;
-
-    FILE *file = fopen("C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\encodedText.txt", "w+");
-
-    if (file == NULL)
-    {
-        printf("Error opening file!\n");
-        exit(1);
-    }
+    char* encodedText = malloc(sizeof(char));
+    encodedText[0] = '\0';
 
     for( i= 0; i < strlen(text); i++) {
         char letter = text[i];
         char* encodedLetter = findCharacterCodeInList(list, letter);
-        fprintf(file, encodedLetter);
+        encodedText = appendStringToString(encodedText, encodedLetter);
     }
 
-    fflush(file);
-    fclose(file);
+    return encodedText;
+}
+
+char* appendStringToString(char* base, char* appended) {
+    char *appendedString = malloc(sizeof(char) * (strlen(base) + strlen(appended) + 1));
+    strcpy(appendedString, base);
+    strcat(appendedString, appended);
+    free(base);
+    free(appended);
+    return appendedString;
 }
 
 char* find(struct Node* node, struct ListElement *list, char* path) {

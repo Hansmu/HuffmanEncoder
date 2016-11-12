@@ -236,10 +236,12 @@ void pushUniqueLetterAndPathToList(struct ListElement *list, char letter, char *
     if (list -> nextElement == NULL && list -> combination == NULL) {
         list -> combination = path;
         list -> character[0] = letter;
+        list -> character[1] = '\0';
     } else if (!isLetterInList(list, letter)) {
         struct ListElement *newElement = malloc(sizeof(*newElement));
         newElement -> character = malloc(sizeof(char) * 2);
         newElement -> character[0] = letter;
+        newElement -> character[1] = '\0';
         newElement -> combination = path;
         newElement -> nextElement = list -> nextElement;
 

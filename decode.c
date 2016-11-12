@@ -5,20 +5,22 @@
 #include "decode.h"
 #include "list.h"
 
-struct Node* getTreeBottom(char *encodedTree);
+struct Node* getTreeBottom(FILE *file);
+char convertBinaryStringFromFileToChar(FILE *file);
 char* appendCharToString(char* string, char character);
 struct Node* createNewCharacterNode(char nodeCharacter);
 
-char* decodeText(char* string, struct Node* decodedTree) {
+char* decodeText(FILE *file, struct Node* decodedTree) {
+    char bit;
     char *decodedText = malloc(sizeof(char));
     decodedText[0] = '\0';
     struct Node* copyOfTreeForIterating = decodedTree;
-    int i, isLeaf;
+    int isLeaf;
 
-    for(i = 0; i < strlen(string); i++) {
-        if (string[i] == '1') {
+    while (EOF != (bit = (char)fgetc(file))) {
+        if (bit == '1') {
             copyOfTreeForIterating = copyOfTreeForIterating -> leftNode;
-        } else if (string[i] == '0') {
+        } else if (bit == '0') {
             copyOfTreeForIterating = copyOfTreeForIterating -> rightNode;
         }
 
@@ -45,49 +47,72 @@ char* appendCharToString(char* string, char character) {
     return appendedString;
 }
 
-struct Node* decodeTree(char* encodedTree) {
-    struct Node* bottomNode = getTreeBottom(encodedTree);
+struct Node* decodeTree(FILE *file) {
+    int numberOfNodes = 0;
+
+    while((char)fgetc(file) != '0') {
+        numberOfNodes++;
+    }
+
+    struct Node* bottomNode = getTreeBottom(file);
+    numberOfNodes--;
     struct Node* treeTop = createNewNode();
     struct Node* oldTop;
-    char* nextNodeInText = strstr(encodedTree, "10") + 5;
     int isNotPair = 0;
 
     treeTop -> leftNode = bottomNode;
 
-    while (nextNodeInText[0] != '\0') {
-        isNotPair = nextNodeInText[0] == '0';
+    while (numberOfNodes != 0) {
+        isNotPair = fgetc(file) == '0';
 
         if (isNotPair) {
-            treeTop -> rightNode = createNewCharacterNode(nextNodeInText[1]);
+            treeTop -> rightNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
             oldTop = treeTop;
             treeTop = createNewNode();
             treeTop -> leftNode = oldTop;
-            nextNodeInText = nextNodeInText + 2;
         } else {
-            treeTop -> rightNode = createNodePair(
-                    createNewCharacterNode(nextNodeInText[2]),
-                    createNewCharacterNode(nextNodeInText[4])
-            );
+            fgetc(file); //Move pointer forward by the 0, since a pair is 10
+            struct Node *firstNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
+            fgetc(file);
+            struct Node *secondNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
+            treeTop -> rightNode = createNodePair(firstNode, secondNode);
 
             oldTop = treeTop;
             treeTop = createNewNode();
             treeTop -> leftNode = oldTop;
-
-            nextNodeInText = nextNodeInText + 5;
         }
+
+        numberOfNodes--;
     }
 
     return treeTop -> leftNode;
 }
 
-struct Node* getTreeBottom(char *encodedTree) {
-    char *firstOccurrence = strstr(encodedTree, "10");
+struct Node* getTreeBottom(FILE *file) {
+    char firstChar, secondChar;
 
-    struct Node* leftNode = createNewCharacterNode(firstOccurrence[2]);
-    struct Node* rightNode = createNewCharacterNode(firstOccurrence[4]);
+    firstChar = convertBinaryStringFromFileToChar(file);
+    fgetc(file);
+    secondChar = convertBinaryStringFromFileToChar(file);
+
+    struct Node* leftNode = createNewCharacterNode(firstChar);
+    struct Node* rightNode = createNewCharacterNode(secondChar);
     struct Node* bottomPair = createNodePair(leftNode, rightNode);
 
     return bottomPair;
+}
+
+char convertBinaryStringFromFileToChar(FILE *file) {
+    int i;
+    char *charAsString = calloc(sizeof(char), 2);
+    char *binaryRepresentationOfChar = calloc(sizeof(char), 9);
+
+    for(i = 0; i < 8; i++) {
+        charAsString[0] = (char)fgetc(file);
+        strcat(binaryRepresentationOfChar, charAsString);
+    }
+
+    return (char)strtol(binaryRepresentationOfChar, NULL, 2);
 }
 
 struct Node* createNewCharacterNode(char nodeCharacter) {
