@@ -9,7 +9,6 @@
  * COMBINATION = PARENTSEQUENCE
  * **/
 
-char* convertCharToBitString(char character);
 char* getParentFromCombination(char *combination);
 char *convertAllLettersToBinary(char *encodedTree);
 int getNumberOfUnconvertedLetters(char *encodedTree);
@@ -65,12 +64,12 @@ int getNumberOfUnconvertedLetters(char *encodedTree) {
 }
 
 char* convertCharToBitString(char character) {
-    char *output = malloc(sizeof(char) * 9);
+    char *output = malloc(sizeof(char) * 5);
     int i;
-    for(i = 0; i < 8; i++) {
-        output[7-i] = (character & (1 << i)) ? '1' : '0';
+    for(i = 0; i < 4; i++) {
+        output[3-i] = (character & (1 << i)) ? '1' : '0';
     }
-    output[8] = '\0';
+    output[4] = '\0';
     return output;
 }
 
@@ -121,7 +120,7 @@ char* createEncodedTreeStringFromTreeList(struct ListElement *list) {
 }
 
 char* getParentFromCombination(char *combination) {
-    char *parent = malloc(sizeof(char) * strlen(combination));
+    char *parent = malloc(sizeof(char) * (strlen(combination) + 1));
     strncpy(parent, combination, strlen(combination) - 1);
     parent[strlen(combination) - 1] = '\0';
     return parent;
@@ -129,7 +128,7 @@ char* getParentFromCombination(char *combination) {
 
 char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombination) {
     if (rightNodeCombination == "") {
-        char *letter = malloc(sizeof(char) * strlen(leftNodeCombination) + 1);
+        char *letter = malloc(sizeof(char) * (strlen(leftNodeCombination) + 1));
         strcpy(letter, leftNodeCombination);
         letter[1] = '\0';
         return letter;

@@ -15,6 +15,7 @@ struct Node {
 };
 
 struct Node* createNewNode();
+char* convertCharToBitString(char character);
 char *getEncodedTree(struct ListElement *list);
 char* findCharacterCodeInList(struct ListElement* list, char letter);
 struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);

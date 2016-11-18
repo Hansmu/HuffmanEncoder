@@ -1,23 +1,23 @@
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "decode.h"
 #include "list.h"
 
-struct Node* getTreeBottom(FILE *file);
-char convertBinaryStringFromFileToChar(FILE *file);
+struct Node* getTreeBottom(char *bitString);
+char convertBinaryStringFromFileToChar(char* bitString);
 char* appendCharToString(char* string, char character);
 struct Node* createNewCharacterNode(char nodeCharacter);
 
-char* decodeText(FILE *file, struct Node* decodedTree) {
+char* decodeText(char* bitsFromFile, struct Node* decodedTree) {
     char bit;
     char *decodedText = malloc(sizeof(char));
     decodedText[0] = '\0';
     struct Node* copyOfTreeForIterating = decodedTree;
-    int isLeaf;
+    int isLeaf, i = 0;
 
-    while (EOF != (bit = (char)fgetc(file))) {
+    while (bitsFromFile[i] != '\0') {
         if (bit == '1') {
             copyOfTreeForIterating = copyOfTreeForIterating -> leftNode;
         } else if (bit == '0') {
@@ -29,6 +29,7 @@ char* decodeText(FILE *file, struct Node* decodedTree) {
             decodedText = appendCharToString(decodedText, copyOfTreeForIterating -> character);
             copyOfTreeForIterating = decodedTree;
         }
+        i++;
     }
 
     return decodedText;
@@ -47,17 +48,19 @@ char* appendCharToString(char* string, char character) {
     return appendedString;
 }
 
-struct Node* decodeTree(FILE *file) {
+struct ReturnNodeAndLength decodeTree(char* encodedBits) {
     int numberOfNodes = 0;
+    int i = 0;
+    struct ReturnNodeAndLength returnElement;
 
-    while((char)fgetc(file) == '0') {}
+    while(encodedBits[i] == '0') { i++; }
     numberOfNodes++;
 
-    while((char)fgetc(file) != '0') {
-        numberOfNodes++;
+    while(encodedBits[i] != '0') {
+        numberOfNodes++, i++;
     }
 
-    struct Node* bottomNode = getTreeBottom(file);
+    struct Node* bottomNode = getTreeBottom(encodedBits + i);
     numberOfNodes--;
     struct Node* treeTop = createNewNode();
     struct Node* oldTop;
@@ -66,18 +69,19 @@ struct Node* decodeTree(FILE *file) {
     treeTop -> leftNode = bottomNode;
 
     while (numberOfNodes != 0) {
-        isNotPair = fgetc(file) == '0';
+        i++;
+        isNotPair = encodedBits[i] == '0';
 
         if (isNotPair) {
-            treeTop -> rightNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
+            treeTop -> rightNode = createNewCharacterNode(convertBinaryStringFromFileToChar(encodedBits));
             oldTop = treeTop;
             treeTop = createNewNode();
             treeTop -> leftNode = oldTop;
         } else {
-            fgetc(file); //Move pointer forward by the 0, since a pair is 10
-            struct Node *firstNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
-            fgetc(file);
-            struct Node *secondNode = createNewCharacterNode(convertBinaryStringFromFileToChar(file));
+            i++; //Move pointer forward by the 0, since a pair is 10
+            struct Node *firstNode = createNewCharacterNode(convertBinaryStringFromFileToChar(encodedBits));
+            i++;
+            struct Node *secondNode = createNewCharacterNode(convertBinaryStringFromFileToChar(encodedBits));
             treeTop -> rightNode = createNodePair(firstNode, secondNode);
 
             oldTop = treeTop;
@@ -88,15 +92,17 @@ struct Node* decodeTree(FILE *file) {
         numberOfNodes--;
     }
 
-    return treeTop -> leftNode;
+    returnElement.tree = treeTop -> leftNode;
+    returnElement.length = i;
+    return returnElement;
 }
 
-struct Node* getTreeBottom(FILE *file) {
+struct Node* getTreeBottom(char* bitString) {
     char firstChar, secondChar;
+    int i = 0;
 
-    firstChar = convertBinaryStringFromFileToChar(file);
-    fgetc(file);
-    secondChar = convertBinaryStringFromFileToChar(file);
+    firstChar = convertBinaryStringFromFileToChar(bitString);
+    secondChar = convertBinaryStringFromFileToChar(bitString + 5);
 
     struct Node* leftNode = createNewCharacterNode(firstChar);
     struct Node* rightNode = createNewCharacterNode(secondChar);
@@ -105,13 +111,13 @@ struct Node* getTreeBottom(FILE *file) {
     return bottomPair;
 }
 
-char convertBinaryStringFromFileToChar(FILE *file) {
+char convertBinaryStringFromFileToChar(char* stringAsBits) {
     int i;
     char *charAsString = calloc(sizeof(char), 2);
-    char *binaryRepresentationOfChar = calloc(sizeof(char), 9);
+    char *binaryRepresentationOfChar = calloc(sizeof(char), 5);
 
-    for(i = 0; i < 8; i++) {
-        charAsString[0] = (char)fgetc(file);
+    for(i = 0; i < 4; i++) {
+        charAsString[0] = stringAsBits[i];
         strcat(binaryRepresentationOfChar, charAsString);
     }
 

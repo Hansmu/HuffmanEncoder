@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
 
@@ -6,6 +7,7 @@
 #include "decode.h"
 
 char* getFileContents(FILE *file);
+char *decodeBitsFromFile(FILE *file);
 char* createStringPadding(int paddingSize);
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
@@ -13,39 +15,58 @@ struct Node* getLowestFrequencyNode(char *string);
 char* encodeText(char *text, struct ListElement* list);
 char* appendStringToString(char* base, char* appended);
 int getLetterCountFromString(char *string, char letter);
-void decodeTextFromFile(char* fileName, char* outputFileName);
-void encodeTextFromFile(char* fileName, char* outputFileName);
+void writeBitsAsCharsToFile(char* bitString, FILE* output);
+int decodeTextFromFile(char* fileName, char* outputFileName);
+int encodeTextFromFile(char* fileName, char* outputFileName);
 char* find(struct Node* node, struct ListElement *list, char* path);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string);
 struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
 
 int main(int argc, char *argv[]) {
-    argc = 3;
-    argv[1] = "-d";
-    argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\encoded.txt";
-    argv[3] = "-o";
-    argv[4] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\decoded.txt";
+    int isEncoding;
+    int isDecoding;
+    char* outputFileName;
+    char* fileName;
 
-    if (argc == 3) {
-        int isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
-        int isDecoding = strcmp(argv[1], "-d") == 0 || strcmp(argv[3], "-d") == 0;
-        char* outputFileName = strcmp(argv[1], "-o") == 0 ? argv[2] : argv[4];
-        char* fileName = strcmp(argv[1], "-e") == 0 || strcmp(argv[1], "-d") == 0 ? argv[2] : argv[4];
+    argc = 4;
+    argv[1] = "-d";
+    argv[2] = "/home/INTRA/hans-miikael.uuspold/P/C/HuffmanEncoder/output.txt";
+    argv[3] = "/home/INTRA/hans-miikael.uuspold/P/C/HuffmanEncoder/decoded.txt";
+
+    if (argc == 5) {
+        isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
+        isDecoding = strcmp(argv[1], "-d") == 0 || strcmp(argv[3], "-d") == 0;
+        outputFileName = strcmp(argv[1], "-o") == 0 ? argv[2] : argv[4];
+        fileName = strcmp(argv[1], "-e") == 0 || strcmp(argv[1], "-d") == 0 ? argv[2] : argv[4];
 
         if (isEncoding) {
-            encodeTextFromFile(fileName, outputFileName);
+            return encodeTextFromFile(fileName, outputFileName);
         } else if (isDecoding) {
-            decodeTextFromFile(fileName, outputFileName);
+            return decodeTextFromFile(fileName, outputFileName);
+        }
+    } else if (argc == 3) {
+        fileName = argv[1];
+        outputFileName = argv[2];
+        return encodeTextFromFile(fileName, outputFileName);
+    } else if (argc == 4) {
+        isDecoding = strcmp(argv[1], "-d") == 0;
+        if (isDecoding) {
+            fileName = argv[2];
+            outputFileName = argv[3];
+            return decodeTextFromFile(fileName, outputFileName);
         }
     }
 
-    return 0;
+    return 1;
 }
 
-void encodeTextFromFile(char* fileName, char* outputFileName) {
+int encodeTextFromFile(char* fileName, char* outputFileName) {
     FILE *file = fopen(fileName, "r");
     FILE *outputFile = fopen(outputFileName, "w+");
+    if (file == NULL) {
+        return 1;
+    }
     char* fileContents = getFileContents(file);
     char* contentsCopy = malloc(sizeof(char) * (strlen(fileContents) + 1));
     strcpy(contentsCopy, fileContents);
@@ -53,12 +74,30 @@ void encodeTextFromFile(char* fileName, char* outputFileName) {
     struct ListElement* list = createListOfLeafValues(encodingTree);
     char* encodedText = encodeText(contentsCopy, list);
     char* encodedTree = getEncodedTree(list);
-    char* decodedContent = appendStringToString(encodedTree, encodedText);
-    int paddingSize = 4 - strlen(decodedContent) % 4;
+    char* encodedContent = appendStringToString(encodedTree, encodedText);
+    int paddingNeeded = strlen(encodedContent) % 4;
+    int paddingSize = 4 - paddingNeeded == 0 ? 4 : paddingNeeded;
     char* padding = createStringPadding(paddingSize);
-    fputs(appendStringToString(padding, decodedContent), outputFile);
-    fflush(outputFile);
-    fclose(outputFile);
+    char* encodedContentWithPadding = appendStringToString(padding, encodedContent);
+    writeBitsAsCharsToFile(encodedContentWithPadding, outputFile);
+
+    return 0;
+}
+
+void writeBitsAsCharsToFile(char* bitString, FILE* output) {
+    int i;
+    char letter;
+    char *fourBits;
+    for(i = 0; i < strlen(bitString); i+=4) {
+        fourBits = malloc(sizeof(char) * 5);
+        strncpy(fourBits, bitString + i, 4);
+        letter = (char)strtol(fourBits, 0, 2);
+        fputc(letter, output);
+        fflush(output);
+        free(fourBits);
+    }
+
+    fclose(output);
 }
 
 char* createStringPadding(int paddingSize) {
@@ -72,14 +111,38 @@ char* createStringPadding(int paddingSize) {
     return padding;
 }
 
-void decodeTextFromFile(char* fileName, char* outputFileName) {
+int decodeTextFromFile(char* fileName, char* outputFileName) {
     FILE *file = fopen(fileName, "r");
     FILE *outputFile = fopen(outputFileName, "w");
-    struct Node* decodedTree = decodeTree(file);
-    char* decodedText = decodeText(file, decodedTree);
+    if (file == NULL) {
+        return 1;
+    }
+    char* bitsFromFile = decodeBitsFromFile(file);
+    struct ReturnNodeAndLength decodedTreeAndLength = decodeTree(bitsFromFile);
+    struct Node* decodedTree = decodedTreeAndLength.tree;
+    int treeLength = decodedTreeAndLength.length;
+    char* decodedText = decodeText(bitsFromFile + treeLength, decodedTree);
     fputs(decodedText, outputFile);
     fflush(outputFile);
     fclose(outputFile);
+
+    return 0;
+}
+
+char *decodeBitsFromFile(FILE *file) {
+    char* bitsFromFile = malloc(sizeof(char) * 2);
+    char letter;
+    do
+    {
+        letter = fgetc(file);
+        bitsFromFile = appendStringToString(bitsFromFile, convertCharToBitString(letter));
+        if( feof(file) )
+        {
+            break ;
+        }
+    }while(1);
+
+    return bitsFromFile;
 }
 
 char* getFileContents(FILE *file) {
@@ -124,8 +187,8 @@ char* appendStringToString(char* base, char* appended) {
     char *appendedString = malloc(sizeof(char) * (strlen(base) + strlen(appended) + 1));
     strcpy(appendedString, base);
     strcat(appendedString, appended);
-    free(base);
-    free(appended);
+    //free(base);
+    //free(appended);
     return appendedString;
 }
 
