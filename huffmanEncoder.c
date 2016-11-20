@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
 
     argc = 4;
     argv[1] = "-d";
-    argv[2] = "/home/INTRA/hans-miikael.uuspold/P/C/HuffmanEncoder/output.txt";
-    argv[3] = "/home/INTRA/hans-miikael.uuspold/P/C/HuffmanEncoder/decoded.txt";
+    argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\output.txt";
+    argv[3] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\decoded.txt";
 
     if (argc == 5) {
         isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
@@ -75,8 +75,8 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
     char* encodedText = encodeText(contentsCopy, list);
     char* encodedTree = getEncodedTree(list);
     char* encodedContent = appendStringToString(encodedTree, encodedText);
-    int paddingNeeded = strlen(encodedContent) % 4;
-    int paddingSize = 4 - paddingNeeded == 0 ? 4 : paddingNeeded;
+    int paddingNeeded = strlen(encodedContent) % 8;
+    int paddingSize = 8 - (paddingNeeded == 0 ? 8 : paddingNeeded);
     char* padding = createStringPadding(paddingSize);
     char* encodedContentWithPadding = appendStringToString(padding, encodedContent);
     writeBitsAsCharsToFile(encodedContentWithPadding, outputFile);
@@ -87,14 +87,14 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
 void writeBitsAsCharsToFile(char* bitString, FILE* output) {
     int i;
     char letter;
-    char *fourBits;
-    for(i = 0; i < strlen(bitString); i+=4) {
-        fourBits = malloc(sizeof(char) * 5);
-        strncpy(fourBits, bitString + i, 4);
-        letter = (char)strtol(fourBits, 0, 2);
+    char *eightBits;
+    for(i = 0; i < strlen(bitString); i+=8) {
+        eightBits = malloc(sizeof(char) * 9);
+        strncpy(eightBits, bitString + i, 8);
+        letter = (char)strtol(eightBits, 0, 2);
         fputc(letter, output);
         fflush(output);
-        free(fourBits);
+        free(eightBits);
     }
 
     fclose(output);
@@ -118,10 +118,10 @@ int decodeTextFromFile(char* fileName, char* outputFileName) {
         return 1;
     }
     char* bitsFromFile = decodeBitsFromFile(file);
-    struct ReturnNodeAndLength decodedTreeAndLength = decodeTree(bitsFromFile);
-    struct Node* decodedTree = decodedTreeAndLength.tree;
-    int treeLength = decodedTreeAndLength.length;
-    char* decodedText = decodeText(bitsFromFile + treeLength, decodedTree);
+    struct NodeAndContent decodedTreeAndContent = decodeTree(bitsFromFile);
+    struct Node* decodedTree = decodedTreeAndContent.node;
+    char* fileContent = decodedTreeAndContent.content;
+    char* decodedText = decodeText(fileContent, decodedTree);
     fputs(decodedText, outputFile);
     fflush(outputFile);
     fclose(outputFile);
@@ -150,7 +150,7 @@ char* getFileContents(FILE *file) {
     long fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    char *fileContents = malloc(fileSize + 1);
+    char *fileContents = calloc(fileSize + 1, sizeof(char));
     fread(fileContents, fileSize, 1, file);
     fileContents[fileSize] = '\0';
     fclose(file);
