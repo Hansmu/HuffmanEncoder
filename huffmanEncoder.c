@@ -130,16 +130,16 @@ int decodeTextFromFile(char* fileName, char* outputFileName) {
 }
 
 char *decodeBitsFromFile(FILE *file) {
-    char* bitsFromFile = malloc(sizeof(char) * 2);
+    char* bitsFromFile = malloc(sizeof(char));
+    bitsFromFile[0] = '\0';
     char letter;
     do
     {
         letter = fgetc(file);
-        bitsFromFile = appendStringToString(bitsFromFile, convertCharToBitString(letter));
-        if( feof(file) )
-        {
+        if( feof(file) ) {
             break ;
         }
+        bitsFromFile = appendStringToString(bitsFromFile, convertCharToBitString(letter));
     }while(1);
 
     return bitsFromFile;
