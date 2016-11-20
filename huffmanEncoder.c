@@ -133,8 +133,8 @@ char *decodeBitsFromFile(FILE *file) {
     char* bitsFromFile = malloc(sizeof(char));
     bitsFromFile[0] = '\0';
     char letter;
-    do
-    {
+
+    do {
         letter = fgetc(file);
         if( feof(file) ) {
             break ;

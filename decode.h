@@ -1,12 +1,12 @@
 #ifndef HUFFMANENCODER_DECODE_H
 #define HUFFMANENCODER_DECODE_H
 
-struct ReturnNodeAndLength {
-    struct Node *tree;
-    int length;
+struct NodeAndContent {
+    struct Node *node;
+    char *content;
 };
 
-struct ReturnNodeAndLength decodeTree(char* bitString);
+struct NodeAndContent decodeTree(char* encodedBits);
 char* decodeText(char *bitString, struct Node* decodedTree);
 
 #endif //HUFFMANENCODER_DECODE_H
