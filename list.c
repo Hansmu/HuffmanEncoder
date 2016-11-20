@@ -64,12 +64,12 @@ int getNumberOfUnconvertedLetters(char *encodedTree) {
 }
 
 char* convertCharToBitString(char character) {
-    char *output = malloc(sizeof(char) * 5);
+    char *output = malloc(sizeof(char) * 9);
     int i;
-    for(i = 0; i < 4; i++) {
-        output[3-i] = (character & (1 << i)) ? '1' : '0';
+    for(i = 0; i < 8; i++) {
+        output[7-i] = (character & (1 << i)) ? '1' : '0';
     }
-    output[4] = '\0';
+    output[8] = '\0';
     return output;
 }
 
