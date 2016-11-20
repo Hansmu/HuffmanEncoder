@@ -163,15 +163,20 @@ struct ListElement findLongestPathInListAndRemove(struct ListElement *list) {
         }
         currentElement = currentElement -> nextElement;
     }
-
     currentElement = list;
 
     while(currentElement != NULL) {
         if (strlen(currentElement -> combination) == longestElement) {
-            foundElement.character = currentElement -> character;
-            foundElement.combination = currentElement -> combination;
-            foundElement.nextElement = removeElementFromList(list, currentElement);
+            foundElement.character = calloc(strlen(currentElement -> character) + 1, sizeof(char));
+            foundElement.combination = calloc(strlen(currentElement -> combination) + 1, sizeof(char));
 
+            foundElement.character[strlen(currentElement -> character)] = '\0';
+            foundElement.combination[strlen(currentElement -> combination)] = '\0';
+
+            strcpy(foundElement.character, currentElement -> character);
+            strcpy(foundElement.combination, currentElement -> combination);
+
+            foundElement.nextElement = removeElementFromList(list, currentElement);
             return foundElement;
         }
 
@@ -191,10 +196,16 @@ struct ListElement findNeighbourPathElementInListAndRemove(char* sequence, struc
     while (currentElement != NULL) {
         sequenceParentsMatch = !strncmp(currentElement -> combination, sequence, strlen(currentElement -> combination) - 1);
         if (strlen(currentElement -> combination) == strlen(sequence) && sequenceParentsMatch) {
-            returnElement.combination = currentElement -> combination;
-            returnElement.character = currentElement -> character;
-            returnElement.nextElement = removeElementFromList(list, currentElement);
+            returnElement.character = calloc(strlen(currentElement -> character) + 1, sizeof(char));
+            returnElement.combination = calloc(strlen(currentElement -> combination) + 1, sizeof(char));
 
+            strcpy(returnElement.character, currentElement -> character);
+            strcpy(returnElement.combination, currentElement -> combination);
+
+            returnElement.character[strlen(currentElement -> character)] = '\0';
+            returnElement.combination[strlen(currentElement -> combination)] = '\0';
+
+            returnElement.nextElement = removeElementFromList(list, currentElement);
             return returnElement;
         }
         currentElement = currentElement -> nextElement;
@@ -263,14 +274,15 @@ struct ListElement* removeElementFromList(struct ListElement *list, struct ListE
                 currentElement = list;
                 list = list -> nextElement;
                 currentElement -> nextElement = NULL;
+                free(currentElement -> character);
+                free(currentElement -> combination);
                 free(currentElement);
                 return list;
             } else {
                 currentElement = copyForIterating;
                 copyForIterating = previousElement;
                 copyForIterating -> nextElement = currentElement -> nextElement;
-                currentElement -> nextElement = NULL;
-                free(currentElement);
+                //free(currentElement);
                 return list;
             }
         }
