@@ -130,21 +130,23 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
     if (rightNodeCombination == "") {
         char *letter = malloc(sizeof(char) * (strlen(leftNodeCombination) + 1));
         strcpy(letter, leftNodeCombination);
-        letter[1] = '\0';
+        letter[strlen(letter) - 1] = '\0';
         return letter;
     } else {
         int newCombinationLength = strlen(leftNodeCombination) + strlen(rightNodeCombination) + 3 + 1;
         char* encodedPair = malloc(sizeof(char) *  newCombinationLength);
 
-        strcpy(encodedPair, "1");
+        strcpy(encodedPair, "1\0");
         if (leftNodeCombination[0] != '0' && leftNodeCombination[0] != '1') {
-            strcat(encodedPair, "0");
+            strcat(encodedPair, "0\0");
         }
         strcat(encodedPair, leftNodeCombination);
         if (rightNodeCombination[0] != '0' && rightNodeCombination[0] != '1') {
-            strcat(encodedPair, "0");
+            strcat(encodedPair, "0\0");
         }
+
         strcat(encodedPair, rightNodeCombination);
+        encodedPair[strlen(encodedPair)] = '\0';
 
         return encodedPair;
     }
