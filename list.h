@@ -17,7 +17,7 @@ struct Node {
 struct Node* createNewNode();
 char* convertCharToBitString(char character);
 char *getEncodedTree(struct ListElement *list);
-char* findCharacterCodeInList(struct ListElement* list, char letter);
+char* findCharacterCodeInList(struct ListElement* list, unsigned char letter);
 struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode);
 void pushUniqueLetterAndPathToList(struct ListElement *list, char letter, char *path);
 

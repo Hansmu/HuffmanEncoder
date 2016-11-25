@@ -10,9 +10,6 @@
  * **/
 
 char* getParentFromCombination(char *combination);
-char *convertAllLettersToBinary(char *encodedTree);
-int getNumberOfUnconvertedLetters(char *encodedTree);
-char* setMemoryForConvertedString(char *encodedTree);
 int isLetterInList(struct ListElement* list, char letter);
 char* createEncodedTreeStringFromTreeList(struct ListElement *list);
 struct ListElement findLongestPathInListAndRemove(struct ListElement *list);
@@ -21,46 +18,7 @@ struct ListElement findNeighbourPathElementInListAndRemove(char* sequence, struc
 struct ListElement* removeElementFromList(struct ListElement *list, struct ListElement *elementToRemove);
 
 char *getEncodedTree(struct ListElement *list) {
-    char *encodedTree = createEncodedTreeStringFromTreeList(list);
-    return convertAllLettersToBinary(encodedTree);;
-}
-
-char *convertAllLettersToBinary(char *encodedTree) {
-    int i = 0;
-    char *characterAsString = malloc(sizeof(char) * 2);
-    char *binaryTree = setMemoryForConvertedString(encodedTree);
-    characterAsString[1] = '\0';
-    for(i = 0; i < strlen(encodedTree); i++) {
-        if (encodedTree[i] != '1' && encodedTree[i] != '0') {
-            strcat(binaryTree, convertCharToBitString(encodedTree[i]));
-        } else {
-            characterAsString[0] = encodedTree[i];
-            strcat(binaryTree, characterAsString);
-        }
-    }
-
-    return binaryTree;
-}
-
-char* setMemoryForConvertedString(char *encodedTree) {
-    int charAmount = strlen(encodedTree) + 1;
-    int numberOfLetters = getNumberOfUnconvertedLetters(encodedTree);
-    charAmount -= numberOfLetters;
-    charAmount = charAmount +  8 * numberOfLetters;
-    char *newString = (char*)calloc(charAmount, sizeof(char));
-    return newString;
-}
-
-int getNumberOfUnconvertedLetters(char *encodedTree) {
-    int i = 0;
-    int letterCount = 0;
-    for(i = 0; i < strlen(encodedTree); i++) {
-        if (encodedTree[i] != '1' && encodedTree[i] != '0') {
-            letterCount++;
-        }
-    }
-
-    return letterCount;
+    return createEncodedTreeStringFromTreeList(list);
 }
 
 char* convertCharToBitString(char character) {
@@ -128,24 +86,32 @@ char* getParentFromCombination(char *combination) {
 
 char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombination) {
     if (rightNodeCombination == "") {
-        char *letter = malloc(sizeof(char) * (strlen(leftNodeCombination) + 1));
+        int leftSideLength = strlen(leftNodeCombination) == 1 ? 8 : strlen(leftNodeCombination);
+        char *letter = malloc(sizeof(char) * (leftSideLength + 1));
         strcpy(letter, leftNodeCombination);
         letter[strlen(letter) - 1] = '\0';
         return letter;
     } else {
-        int newCombinationLength = strlen(leftNodeCombination) + strlen(rightNodeCombination) + 3 + 1;
-        char* encodedPair = malloc(sizeof(char) *  newCombinationLength);
+        int leftSideLength = strlen(leftNodeCombination) == 1 ? 8 : strlen(leftNodeCombination);
+        int rightSideLength = strlen(rightNodeCombination) == 1 ? 8 : strlen(rightNodeCombination);
+        int newCombinationLength = leftSideLength + rightSideLength + 3 + 1;
+        char* encodedPair = calloc(newCombinationLength, sizeof(char));
 
         strcpy(encodedPair, "1\0");
-        if (leftNodeCombination[0] != '0' && leftNodeCombination[0] != '1') {
+        if (strlen(leftNodeCombination) == 1) {
             strcat(encodedPair, "0\0");
-        }
-        strcat(encodedPair, leftNodeCombination);
-        if (rightNodeCombination[0] != '0' && rightNodeCombination[0] != '1') {
-            strcat(encodedPair, "0\0");
+            strcat(encodedPair, convertCharToBitString(leftNodeCombination[0]));
+        } else {
+            strcat(encodedPair, leftNodeCombination);
         }
 
-        strcat(encodedPair, rightNodeCombination);
+        if (strlen(rightNodeCombination) == 1) {
+            strcat(encodedPair, "0\0");
+            strcat(encodedPair, convertCharToBitString(rightNodeCombination[0]));
+        } else {
+            strcat(encodedPair, rightNodeCombination);
+        }
+
         encodedPair[strlen(encodedPair)] = '\0';
 
         return encodedPair;
@@ -228,15 +194,15 @@ int isLetterInList(struct ListElement* list, char letter) {
     return 0;
 }
 
-char* findCharacterCodeInList(struct ListElement* list, char letter) {
-    if (list -> character[0] == letter) {
+char* findCharacterCodeInList(struct ListElement* list, unsigned char letter) {
+    if ((unsigned char)list -> character[0] == letter) {
         return list -> combination;
     }
 
     while(list -> nextElement) {
         list = list -> nextElement;
 
-        if (list -> character[0] == letter) {
+        if ((unsigned char)list -> character[0] == letter) {
             return list -> combination;
         }
     }
