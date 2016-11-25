@@ -6,8 +6,11 @@
 #include "list.h"
 #include "decode.h"
 
+int letterFrequency[256];
+
 char* getFileContents(FILE *file);
 char *decodeBitsFromFile(FILE *file);
+void createLetterStatistics(char *text);
 char* createStringPadding(int paddingSize);
 struct Node* createEncodingTree(char *text);
 void removeCharacterFromString(char* str, char c);
@@ -29,10 +32,10 @@ int main(int argc, char *argv[]) {
     char* outputFileName;
     char* fileName;
 
-    argc = 4;
-    argv[1] = "-d";
-    argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\output.txt";
-    argv[3] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\decoded.txt";
+    int i = 0;
+    for (i = 0; i < 256; i++) {
+        letterFrequency[i] = 0;
+    }
 
     if (argc == 5) {
         isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
@@ -41,17 +44,21 @@ int main(int argc, char *argv[]) {
         fileName = strcmp(argv[1], "-e") == 0 || strcmp(argv[1], "-d") == 0 ? argv[2] : argv[4];
 
         if (isEncoding) {
+            printf("Encoding.\n");
             return encodeTextFromFile(fileName, outputFileName);
         } else if (isDecoding) {
+            printf("Decoding.\n");
             return decodeTextFromFile(fileName, outputFileName);
         }
     } else if (argc == 3) {
+        printf("Encoding.\n");
         fileName = argv[1];
         outputFileName = argv[2];
         return encodeTextFromFile(fileName, outputFileName);
     } else if (argc == 4) {
         isDecoding = strcmp(argv[1], "-d") == 0;
         if (isDecoding) {
+            printf("Decoding.\n");
             fileName = argv[2];
             outputFileName = argv[3];
             return decodeTextFromFile(fileName, outputFileName);
@@ -62,7 +69,7 @@ int main(int argc, char *argv[]) {
 }
 
 int encodeTextFromFile(char* fileName, char* outputFileName) {
-    FILE *file = fopen(fileName, "r");
+    FILE *file = fopen(fileName, "rb");
     FILE *outputFile = fopen(outputFileName, "w+");
     if (file == NULL) {
         return 1;
@@ -70,6 +77,7 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
     char* fileContents = getFileContents(file);
     char* contentsCopy = malloc(sizeof(char) * (strlen(fileContents) + 1));
     strcpy(contentsCopy, fileContents);
+    createLetterStatistics(fileContents);
     struct Node* encodingTree = createEncodingTree(fileContents);
     struct ListElement* list = createListOfLeafValues(encodingTree);
     char* encodedText = encodeText(contentsCopy, list);
@@ -82,6 +90,14 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
     writeBitsAsCharsToFile(encodedContentWithPadding, outputFile);
 
     return 0;
+}
+
+void createLetterStatistics(char *text) {
+    int i = 0;
+    while(text[i] != '\0') {
+        letterFrequency[(unsigned char) text[i]]++;
+        i++;
+    }
 }
 
 void writeBitsAsCharsToFile(char* bitString, FILE* output) {
@@ -214,15 +230,26 @@ char* find(struct Node* node, struct ListElement *list, char* path) {
     return NULL;
 }
 
+int hasFrequenciesLeft() {
+    int i;
+    for(i = 0; i < 256; i++) {
+        if (letterFrequency[i] != 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 struct Node* createEncodingTree(char *text) {
     struct Node* smallestFrequencyNode, *secondSmallestFrequencyNode, *currentNode, *newParent;
     currentNode = createNewNode();
 
-    while(strlen(text)) {
+    while(hasFrequenciesLeft()) {
         smallestFrequencyNode = findLowestFrequencyLetterAndRemoveFromString(text);
 
         if (currentNode -> leftNode == NULL) {
-            if (strlen(text)) {
+            if (hasFrequenciesLeft()) {
                 secondSmallestFrequencyNode = findLowestFrequencyLetterAndRemoveFromString(text);
                 currentNode -> leftNode = createNodePair(smallestFrequencyNode, secondSmallestFrequencyNode);
             } else {
@@ -232,7 +259,7 @@ struct Node* createEncodingTree(char *text) {
         } else {
             int combinedFrequency, currentNodeFrequency = currentNode -> frequency;
 
-            if (strlen(text)) {
+            if (hasFrequenciesLeft()) {
                 secondSmallestFrequencyNode = getLowestFrequencyNode(text);
                 currentNode -> rightNode = getLowestFrequencyNodeOrPair(text, currentNodeFrequency, smallestFrequencyNode, secondSmallestFrequencyNode);
             } else {
@@ -242,13 +269,17 @@ struct Node* createEncodingTree(char *text) {
             combinedFrequency = currentNode -> leftNode -> frequency + currentNode -> rightNode -> frequency;
             currentNode -> frequency = combinedFrequency;
 
-            if (strlen(text)) {
+            if (hasFrequenciesLeft()) {
                 newParent = createNewNode();
                 newParent -> leftNode = currentNode;
                 newParent -> frequency = currentNode -> frequency;
                 currentNode = newParent;
             }
         }
+    }
+
+    if (currentNode -> rightNode == NULL) {
+        return currentNode -> leftNode;
     }
 
     return currentNode;
@@ -270,12 +301,12 @@ struct Node* getLowestFrequencyNodeOrPair(char* text, int currentNodeFrequency, 
     int secondSmallestFrequency = secondSmallestFrequencyNode -> frequency;
 
     if (smallestFrequency <= currentNodeFrequency && secondSmallestFrequency <= currentNodeFrequency) {
-        removeCharacterFromString(text, secondSmallestFrequencyNode -> character);
+        letterFrequency[(unsigned char)secondSmallestFrequencyNode -> character] = 0;
         return createNodePair(smallestFrequencyNode, secondSmallestFrequencyNode);
     } else if (smallestFrequency <= currentNodeFrequency) {
         return smallestFrequencyNode;
     } else {
-        removeCharacterFromString(text, secondSmallestFrequencyNode -> character);
+        letterFrequency[(unsigned char)secondSmallestFrequencyNode -> character] = 0;
         return secondSmallestFrequencyNode;
     }
 }
@@ -292,45 +323,32 @@ struct Node* createNodePair(struct Node* leftNode, struct Node* rightNode) {
     return newNode;
 }
 
-void removeCharacterFromString(char* str, char c) {
-    char *pr = str, *pw = str;
-    while (*pr) {
-        *pw = *pr++;
-        pw += (*pw != c);
-    }
-    *pw = '\0';
-}
-
-int getLetterCountFromString(char *string, char letter) {
-    int letterToCompareTo, count = 0;
-
-    for (letterToCompareTo = 0; letterToCompareTo < strlen(string); letterToCompareTo++) {
-        if (letter == string[letterToCompareTo]) {
-            count++;
-        }
-    }
-
-    return count;
-}
-
 struct Node* findLowestFrequencyLetterAndRemoveFromString(char *string) {
     struct Node* lowestFrequencyNode = getLowestFrequencyNode(string);
-    removeCharacterFromString(string, lowestFrequencyNode -> character);
     return lowestFrequencyNode;
 }
 
 struct Node* getLowestFrequencyNode(char *string) {
-    char letter;
-    int letterToRead, count;
+    int index, minFrequency = 0;
     struct Node* lowestFrequencyNode = createNewNode();
 
-    for (letterToRead = 0; letterToRead < strlen(string); letterToRead++) {
-        letter = string[letterToRead];
-        count = getLetterCountFromString(string, letter);
+    for(index = 0; index < 256; index++) {
+        if (minFrequency == 0 && letterFrequency[index] != 0) {
+            minFrequency = letterFrequency[index];
+        } else if (letterFrequency[index] != 0 && minFrequency > letterFrequency[index]) {
+            minFrequency = letterFrequency[index];
+        }
+    }
 
-        if (count < lowestFrequencyNode->frequency || !lowestFrequencyNode->frequency) {
-            lowestFrequencyNode->frequency = count;
-            lowestFrequencyNode->character = letter;
+    if (minFrequency != 0) {
+        for(index = 0; index < 256; index++) {
+            if (letterFrequency[index] == minFrequency) {
+                lowestFrequencyNode -> frequency = minFrequency;
+                lowestFrequencyNode -> character = (char)index;
+                letterFrequency[index] = 0;
+
+                return lowestFrequencyNode;
+            }
         }
     }
 
