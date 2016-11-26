@@ -10,7 +10,7 @@ int letterFrequency[256];
 
 struct Node* createEncodingTree();
 struct Node* getLowestFrequencyNode();
-void createLetterStatistics(FILE *file);
+unsigned long createLetterStatistics(FILE *file);
 char* createStringPadding(int paddingSize);
 void decodeBitsFromFileAndWriteToTemp(FILE *file, FILE *tempBitsFile);
 int decodeTextFromFile(char* fileName, char* outputFileName);
@@ -19,7 +19,7 @@ struct Node* findLowestFrequencyLetterAndRemoveFromStatistics();
 char* find(struct Node* node, struct ListElement *list, char* path);
 void copyFileContentToFile(FILE *sourceFile, FILE *destinationFile);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
-int encodeTextAndWriteToTempFile(FILE *file, FILE *temp, struct ListElement* list);
+unsigned long encodeTextAndWriteToTempFile(FILE *file, FILE *temp, struct ListElement* list);
 void writeBitsAsCharsToFile(char* padding, FILE *tempHeader, FILE* output, FILE *tempContent);
 struct Node* getLowestFrequencyNodeOrPair(int currentNodeFrequency, struct Node* smallestFrequencyNode, struct Node* secondSmallestFrequencyNode);
 
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
 int encodeTextFromFile(char* fileName, char* outputFileName) {
     FILE *file = fopen(fileName, "rb");
-    FILE *outputFile = fopen(outputFileName, "w+");
+    FILE *outputFile = fopen(outputFileName, "wb");
     FILE *tempText = fopen("temp.txt", "w+");
     FILE *tempHeader = fopen("tempHeader.txt", "w+");
 
@@ -70,23 +70,35 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
         return 1;
     }
 
-    createLetterStatistics(file);
+    unsigned long initialFileSize = createLetterStatistics(file);
     struct Node* encodingTree = createEncodingTree();
     struct ListElement* list = createListOfLeafValues(encodingTree);
-    int contentLength = encodeTextAndWriteToTempFile(file, tempText, list);
-    int headerLength = getEncodedTree(list, tempHeader);
+    unsigned long contentLength = encodeTextAndWriteToTempFile(file, tempText, list);
+    unsigned long headerLength = getEncodedTree(list, tempHeader);
     int paddingNeeded = (contentLength + headerLength) % 8;
     int paddingSize = 8 - (paddingNeeded == 0 ? 8 : paddingNeeded);
     char* padding = createStringPadding(paddingSize);
     fflush(tempText);
     fflush(tempHeader);
-    writeBitsAsCharsToFile(padding, tempHeader, outputFile, tempText);
+
+    if (initialFileSize > ((contentLength + headerLength + paddingSize) / 8)) {
+        writeBitsAsCharsToFile(padding, tempHeader, outputFile, tempText);
+    } else {
+        fclose(outputFile);
+        remove(outputFileName);
+    }
+
     fclose(tempText);
+    fclose(tempHeader);
+    remove("temp.txt");
+    remove("tempHeader.txt");
+
     return 0;
 }
 
-void createLetterStatistics(FILE *file) {
+unsigned long createLetterStatistics(FILE *file) {
     int letter, i;
+    unsigned long size = 0;
 
     for (i = 0; i < 256; i++) {
         letterFrequency[i] = 0;
@@ -99,11 +111,14 @@ void createLetterStatistics(FILE *file) {
             break ;
         }
         letterFrequency[letter]++;
+        size++;
     }while(1);
+
+    return size;
 }
 
 void writeBitsAsCharsToFile(char* padding, FILE *tempHeader, FILE* output, FILE *tempContent) {
-    FILE *tempFullContent = fopen("tempTogether.txt", "w+");
+    FILE *tempFullContent = fopen("tempTogether.txt", "wb+");
     char letter, *eightBits;
 
     fputs(padding, tempFullContent);
@@ -113,11 +128,15 @@ void writeBitsAsCharsToFile(char* padding, FILE *tempHeader, FILE* output, FILE 
 
     rewind(tempFullContent);
 
-    while(!feof(tempFullContent)) {
+    while(!feof(tempFullContent) && !ferror(tempFullContent)) {
         eightBits = calloc(9, sizeof(char));
         fgets(eightBits, 9, tempFullContent);
         letter = (char)strtol(eightBits, 0, 2);
-        fputc(letter, output);
+
+        if (strcmp(eightBits, "") != 0) {
+            fputc(letter, output);
+        }
+
         fflush(output);
         free(eightBits);
     }
@@ -154,9 +173,9 @@ char* createStringPadding(int paddingSize) {
 }
 
 int decodeTextFromFile(char* fileName, char* outputFileName) {
-    FILE *file = fopen(fileName, "r");
-    FILE *outputFile = fopen(outputFileName, "w");
-    FILE *pureBitsFile = fopen("tempBits.txt", "w+");
+    FILE *file = fopen(fileName, "rb");
+    FILE *outputFile = fopen(outputFileName, "wb");
+    FILE *pureBitsFile = fopen("tempBits.txt", "wb+");
 
     if (file == NULL) {
         return 1;
@@ -177,12 +196,14 @@ void decodeBitsFromFileAndWriteToTemp(FILE *file, FILE *tempBitsFile) {
     char letter;
 
     do {
-        letter = fgetc(file);
+        letter = (char)fgetc(file);
 
-        if( feof(file) || letter == '\0') {
+        if(feof(file)) {
             break ;
         }
+
         fputs(convertCharToBitString(letter), tempBitsFile);
+        fflush(tempBitsFile);
     }while(1);
 }
 
@@ -197,8 +218,8 @@ struct ListElement* createListOfLeafValues(struct Node* encodingTree) {
     return list;
 }
 
-int encodeTextAndWriteToTempFile(FILE* file, FILE *temp, struct ListElement* list) {
-    int length = 0;
+unsigned long encodeTextAndWriteToTempFile(FILE* file, FILE *temp, struct ListElement* list) {
+    unsigned long length = 0;
     rewind(file);
 
     do{

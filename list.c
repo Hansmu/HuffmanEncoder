@@ -10,7 +10,7 @@
  * **/
 
 char* getParentFromCombination(char *combination);
-int convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile);
+unsigned long convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile);
 int isLetterInList(struct ListElement* list, char letter);
 char* createEncodedTreeStringFromTreeList(struct ListElement *list);
 struct ListElement findLongestPathInListAndRemove(struct ListElement *list);
@@ -18,14 +18,16 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
 struct ListElement findNeighbourPathElementInListAndRemove(char* sequence, struct ListElement *list);
 struct ListElement* removeElementFromList(struct ListElement *list, struct ListElement *elementToRemove);
 
-int getEncodedTree(struct ListElement *list, FILE* tempHeaderFile) {
+unsigned long getEncodedTree(struct ListElement *list, FILE* tempHeaderFile) {
     char *encodedTree = createEncodedTreeStringFromTreeList(list);
     return convertAllLettersToBinary(encodedTree, tempHeaderFile);
 }
 
-int convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile) {
-    int i, length = 0, pairCounter = 0, singleCounter = 0;
+unsigned long convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile) {
+    int i, pairCounter = 0, singleCounter = 0;
     int isOneOrZeroPartOfPair = 0, isOneOrZerOPartOfSingle = 0;
+    unsigned long length = 0;
+
     for(i = 0; i < strlen(encodedTree); i++) {
         if (encodedTree[i] == '1' && encodedTree[i+1] == '0' && pairCounter == 0) {
             pairCounter = 5; //Starts with the 1 of the pair, so 5 as the counter.
