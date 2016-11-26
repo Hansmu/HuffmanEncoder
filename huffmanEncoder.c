@@ -29,19 +29,6 @@ int main(int argc, char *argv[]) {
     char* outputFileName;
     char* fileName;
 
-    argc = 4;
-    if (argc == 4) {
-        argv[1] = "-d";
-        argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\output.txt";
-        argv[3] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\decoded.txt";
-    } else if (argc = 3) {
-        argv[1] = "-d";
-        argv[1] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\input.txt";
-        argv[2] = "C:\\Users\\Hans\\Documents\\Programming\\C\\huffmanEncoder\\output.txt";
-    }
-
-
-
     if (argc == 5) {
         isEncoding = strcmp(argv[1], "-e") == 0 || strcmp(argv[3], "-e") == 0;
         isDecoding = strcmp(argv[1], "-d") == 0 || strcmp(argv[3], "-d") == 0;
