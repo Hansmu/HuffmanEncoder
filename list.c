@@ -274,8 +274,6 @@ struct ListElement* removeElementFromList(struct ListElement *list, struct ListE
                 currentElement = list;
                 list = list -> nextElement;
                 currentElement -> nextElement = NULL;
-                free(currentElement -> character);
-                free(currentElement -> combination);
                 free(currentElement);
                 return list;
             } else {
