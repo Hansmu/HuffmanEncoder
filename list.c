@@ -10,6 +10,7 @@
  * **/
 
 char* getParentFromCombination(char *combination);
+int convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile);
 int isLetterInList(struct ListElement* list, char letter);
 char* createEncodedTreeStringFromTreeList(struct ListElement *list);
 struct ListElement findLongestPathInListAndRemove(struct ListElement *list);
@@ -17,8 +18,43 @@ char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombina
 struct ListElement findNeighbourPathElementInListAndRemove(char* sequence, struct ListElement *list);
 struct ListElement* removeElementFromList(struct ListElement *list, struct ListElement *elementToRemove);
 
-char *getEncodedTree(struct ListElement *list) {
-    return createEncodedTreeStringFromTreeList(list);
+int getEncodedTree(struct ListElement *list, FILE* tempHeaderFile) {
+    char *encodedTree = createEncodedTreeStringFromTreeList(list);
+    return convertAllLettersToBinary(encodedTree, tempHeaderFile);
+}
+
+int convertAllLettersToBinary(char *encodedTree, FILE *tempHeaderFile) {
+    int i, length = 0, pairCounter = 0, singleCounter = 0;
+    int isOneOrZeroPartOfPair = 0, isOneOrZerOPartOfSingle = 0;
+    for(i = 0; i < strlen(encodedTree); i++) {
+        if (encodedTree[i] == '1' && encodedTree[i+1] == '0' && pairCounter == 0) {
+            pairCounter = 5; //Starts with the 1 of the pair, so 5 as the counter.
+        }
+        if (singleCounter == 0 && pairCounter == 0 && encodedTree[i] == '0') {
+            singleCounter = 2;
+        }
+        isOneOrZeroPartOfPair = (encodedTree[i] == '1' || encodedTree[i] == '0') && (pairCounter == 3 || pairCounter == 1);
+        isOneOrZerOPartOfSingle = (encodedTree[i] == '1' || encodedTree[i] == '0') && singleCounter == 1;
+        if (encodedTree[i] != '1' && encodedTree[i] != '0') {
+            length += 8;
+            fputs(convertCharToBitString(encodedTree[i]), tempHeaderFile);
+        } else if (isOneOrZeroPartOfPair || isOneOrZerOPartOfSingle) {
+            length += 8;
+            fputs(convertCharToBitString(encodedTree[i]), tempHeaderFile);
+        } else {
+            length += 1;
+            fputc(encodedTree[i], tempHeaderFile);
+        }
+
+        if (pairCounter != 0) {
+            pairCounter--;
+        }
+        if (singleCounter != 0) {
+            singleCounter--;
+        }
+    }
+
+    return length;
 }
 
 char* convertCharToBitString(char character) {
@@ -86,32 +122,28 @@ char* getParentFromCombination(char *combination) {
 
 char* createEncodedPairOfNodes(char* leftNodeCombination, char* rightNodeCombination) {
     if (rightNodeCombination == "") {
-        int leftSideLength = strlen(leftNodeCombination) == 1 ? 8 : strlen(leftNodeCombination);
+        int leftSideLength = strlen(leftNodeCombination);
         char *letter = malloc(sizeof(char) * (leftSideLength + 1));
         strcpy(letter, leftNodeCombination);
         letter[strlen(letter) - 1] = '\0';
         return letter;
     } else {
-        int leftSideLength = strlen(leftNodeCombination) == 1 ? 8 : strlen(leftNodeCombination);
-        int rightSideLength = strlen(rightNodeCombination) == 1 ? 8 : strlen(rightNodeCombination);
+        int leftSideLength = strlen(leftNodeCombination);
+        int rightSideLength = strlen(rightNodeCombination);
         int newCombinationLength = leftSideLength + rightSideLength + 3 + 1;
         char* encodedPair = calloc(newCombinationLength, sizeof(char));
 
         strcpy(encodedPair, "1\0");
         if (strlen(leftNodeCombination) == 1) {
             strcat(encodedPair, "0\0");
-            strcat(encodedPair, convertCharToBitString(leftNodeCombination[0]));
-        } else {
-            strcat(encodedPair, leftNodeCombination);
         }
 
+        strcat(encodedPair, leftNodeCombination);
         if (strlen(rightNodeCombination) == 1) {
             strcat(encodedPair, "0\0");
-            strcat(encodedPair, convertCharToBitString(rightNodeCombination[0]));
-        } else {
-            strcat(encodedPair, rightNodeCombination);
         }
 
+        strcat(encodedPair, rightNodeCombination);
         encodedPair[strlen(encodedPair)] = '\0';
 
         return encodedPair;

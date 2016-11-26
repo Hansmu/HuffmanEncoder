@@ -6,7 +6,7 @@ struct NodeAndContent {
     char *content;
 };
 
-struct NodeAndContent decodeTree(char* encodedBits);
-char* decodeText(char *bitString, struct Node* decodedTree);
+struct Node* decodeTree(FILE *tempBitsFile);
+void decodeText(FILE *outputFile, FILE *tempBitsFile, struct Node* decodedTree);
 
 #endif //HUFFMANENCODER_DECODE_H
