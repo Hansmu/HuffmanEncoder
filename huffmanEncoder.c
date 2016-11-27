@@ -10,14 +10,15 @@ int letterFrequency[256];
 
 struct Node* createEncodingTree();
 struct Node* getLowestFrequencyNode();
-unsigned long createLetterStatistics(FILE *file);
 char* createStringPadding(int paddingSize);
-void decodeBitsFromFileAndWriteToTemp(FILE *file, FILE *tempBitsFile);
+unsigned long createLetterStatistics(FILE *file);
+char* getNewPath(char* oldPath, char* appendedPath);
 int decodeTextFromFile(char* fileName, char* outputFileName);
 int encodeTextFromFile(char* fileName, char* outputFileName);
 struct Node* findLowestFrequencyLetterAndRemoveFromStatistics();
 char* find(struct Node* node, struct ListElement *list, char* path);
 void copyFileContentToFile(FILE *sourceFile, FILE *destinationFile);
+void decodeBitsFromFileAndWriteToTemp(FILE *file, FILE *tempBitsFile);
 struct ListElement* createListOfLeafValues(struct Node* encodingTree);
 unsigned long encodeTextAndWriteToTempFile(FILE *file, FILE *temp, struct ListElement* list);
 void writeBitsAsCharsToFile(char* padding, FILE *tempHeader, FILE* output, FILE *tempContent);
@@ -83,7 +84,9 @@ int encodeTextFromFile(char* fileName, char* outputFileName) {
 
     if (initialFileSize > ((contentLength + headerLength + paddingSize) / 8)) {
         writeBitsAsCharsToFile(padding, tempHeader, outputFile, tempText);
+        printf("Successfully finished encoding.\n");
     } else {
+        printf("Original size is smaller than encoded size. Stopping encoding.\n");
         fclose(outputFile);
         remove(outputFileName);
     }
@@ -244,6 +247,15 @@ char* appendStringToString(char* base, char* appended) {
     return appendedString;
 }
 
+char* getNewPath(char* oldPath, char* appendedPath) {
+    char *newPath = calloc(strlen(oldPath) + strlen(appendedPath) + 1, sizeof(char));
+
+    strcpy(newPath, oldPath);
+    strcat(newPath, appendedPath);
+
+    return newPath;
+}
+
 char* find(struct Node* node, struct ListElement *list, char* path) {
     char* currentPath;
     char* newPathLeft = malloc(strlen(path) + 1);
@@ -257,10 +269,10 @@ char* find(struct Node* node, struct ListElement *list, char* path) {
     if (node -> leftNode == NULL && node -> rightNode == NULL) {
         pushUniqueLetterAndPathToList(list, node -> character, path);
     }
-    if(NULL != (currentPath=find(node -> leftNode, list, strcat(newPathLeft, "1")))) {
+    if(NULL != (currentPath=find(node -> leftNode, list, getNewPath(newPathLeft, "1")))) {
         return currentPath;
     }
-    if(NULL!=(currentPath=find(node -> rightNode, list, strcat(newPathRight, "0")))) {
+    if(NULL!=(currentPath=find(node -> rightNode, list, getNewPath(newPathRight, "0")))) {
         return currentPath;
     }
     return NULL;
